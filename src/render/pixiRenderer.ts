@@ -1,6 +1,6 @@
 import { Application, Graphics, Sprite, Texture } from "pixi.js";
 import { Simulation } from "../sim/simulation";
-import { Cell } from "../sim/types";
+import { Cell, Role } from "../sim/types";
 
 export class PixiRenderer {
   app: Application;
@@ -119,20 +119,20 @@ export class PixiRenderer {
     // ants
     this.antGfx.clear();
     const s = this.sim.cfg.cellSize;
-    // Workers (white), Soldier (cyan), Queen (yellow)
     for (const a of this.sim.ants) {
       if (!a.alive) continue;
-      let color = 0xffffff;
-      // simple role color coding based on enum order
-      // 0=queen,1=worker,2=soldier
-      // (we could import Role to switch; keeping lightweight)
-      // queen yellow, worker white, soldier cyan
+      let color = 0xffffff; // default worker
+      switch (a.role) {
+        case Role.QUEEN:
+          color = 0xffff00; // yellow
+          break;
+        case Role.SOLDIER:
+          color = 0x00ffff; // cyan
+          break;
+      }
+      this.antGfx.beginFill(color, 0.95);
+      this.antGfx.drawRect(a.p.x * s, a.p.y * s, 1, 1);
+      this.antGfx.endFill();
     }
-    this.antGfx.beginFill(0xffffff, 0.95);
-    for (const a of this.sim.ants) {
-      if (!a.alive) continue;
-      this.antGfx.drawRect(a.p.x*s, a.p.y*s, 1, 1);
-    }
-    this.antGfx.endFill();
   }
 }
