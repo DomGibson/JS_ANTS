@@ -116,23 +116,44 @@ export class PixiRenderer {
     this.ctx.putImageData(this.imageData, 0, 0);
     this.pherTex.update();
 
-    // ants
+    // ants & enemies (Pixi v8 API)
     this.antGfx.clear();
     const s = this.sim.cfg.cellSize;
-    for (const a of this.sim.ants) {
-      if (!a.alive) continue;
-      let color = 0xffffff; // default worker
-      switch (a.role) {
-        case Role.QUEEN:
-          color = 0xffff00; // yellow
-          break;
-        case Role.SOLDIER:
-          color = 0x00ffff; // cyan
-          break;
+
+    // enemies (optional) — red
+    const simAny = this.sim as any;
+    if (simAny.enemies?.length) {
+      this.antGfx.beginPath();
+      for (const e of simAny.enemies) {
+        if (!e.alive) continue;
+        this.antGfx.rect(e.p.x * s, e.p.y * s, 1, 2);
       }
-      this.antGfx.beginFill(color, 0.95);
-      this.antGfx.drawRect(a.p.x * s, a.p.y * s, 1, 1);
-      this.antGfx.endFill();
+      this.antGfx.fill({ color: 0xff3b30, alpha: 0.95 });
     }
+
+    // workers — white
+    this.antGfx.beginPath();
+    for (const a of this.sim.ants) {
+      if (!a.alive || a.role !== Role.WORKER) continue;
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
+    }
+    this.antGfx.fill({ color: 0xffffff, alpha: 0.95 });
+
+    // soldiers — cyan
+    this.antGfx.beginPath();
+    for (const a of this.sim.ants) {
+      if (!a.alive || a.role !== Role.SOLDIER) continue;
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
+    }
+    this.antGfx.fill({ color: 0x00ffff, alpha: 0.95 });
+
+    // queen — yellow (slightly larger)
+    this.antGfx.beginPath();
+    for (const a of this.sim.ants) {
+      if (!a.alive || a.role !== Role.QUEEN) continue;
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 2, 2);
+    }
+    this.antGfx.fill({ color: 0xffee58, alpha: 1.0 });
+    
   }
 }

@@ -1,4 +1,4 @@
-import { Ant, Role, WorldConfig } from "./types";
+import { Ant, Role, WorldConfig, Enemy } from "./types";
 import { World } from "./world";
 
 export function makeQueen(spawn:{x:number;y:number}): Ant {
@@ -94,26 +94,49 @@ function stepQueen(a:Ant, world:World, cfg:WorldConfig){
     }
   }
 }
-function stepSoldier(a:Ant, world:World, cfg:WorldConfig){
-  const dx = a.p.x - world.cfg.nest.x;
-  const dy = a.p.y - world.cfg.nest.y;
-  const dist2 = dx*dx + dy*dy;
-  const radius = 12;
-  if (dist2 > radius*radius) {
-    const desired = Math.atan2(world.cfg.nest.y - a.p.y, world.cfg.nest.x - a.p.x);
+function stepSoldier(a:Ant, world:World, cfg:WorldConfig, enemies:Enemy[]){
+  let target: Enemy | null = null;
+  let best = Infinity;
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const dx = e.p.x - a.p.x;
+    const dy = e.p.y - a.p.y;
+    const d2 = dx*dx + dy*dy;
+    if (d2 < best) { best = d2; target = e; }
+  }
+
+  if (target && best <= 1) {
+    target.alive = false;
+  }
+
+  if (target) {
+    const desired = Math.atan2(target.p.y - a.p.y, target.p.x - a.p.x);
     let delta = desired - a.a;
     while (delta > Math.PI) delta -= 2*Math.PI;
     while (delta < -Math.PI) delta += 2*Math.PI;
-    a.a += Math.sign(delta) * cfg.turnRate * 0.8;
+    a.a += Math.sign(delta) * cfg.turnRate;
   } else {
-    a.a += (Math.random()-0.5) * cfg.turnRate;
+    const dx = a.p.x - world.cfg.nest.x;
+    const dy = a.p.y - world.cfg.nest.y;
+    const dist2 = dx*dx + dy*dy;
+    const radius = 12;
+    if (dist2 > radius*radius) {
+      const desired = Math.atan2(world.cfg.nest.y - a.p.y, world.cfg.nest.x - a.p.x);
+      let delta = desired - a.a;
+      while (delta > Math.PI) delta -= 2*Math.PI;
+      while (delta < -Math.PI) delta += 2*Math.PI;
+      a.a += Math.sign(delta) * cfg.turnRate * 0.8;
+    } else {
+      a.a += (Math.random()-0.5) * cfg.turnRate;
+    }
   }
+
   const nx = a.p.x + Math.cos(a.a)*cfg.moveSpeed*0.8;
   const ny = a.p.y + Math.sin(a.a)*cfg.moveSpeed*0.8;
   tryMoveOrDig(a, world, cfg, nx, ny);
 }
 
-export function stepAnt(a: Ant, world: World, cfg: WorldConfig) {
+export function stepAnt(a: Ant, world: World, cfg: WorldConfig, enemies: Enemy[]) {
   if (!a.alive) return;
   a.age++;
   a.energy -= cfg.energyDrain;
@@ -121,7 +144,7 @@ export function stepAnt(a: Ant, world: World, cfg: WorldConfig) {
   switch (a.role) {
     case Role.WORKER: stepWorker(a, world, cfg); break;
     case Role.QUEEN:  stepQueen(a, world, cfg);  break;
-    case Role.SOLDIER:stepSoldier(a, world, cfg);break;
+    case Role.SOLDIER:stepSoldier(a, world, cfg, enemies);break;
   }
 
   if (a.energy <= 0) {

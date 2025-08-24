@@ -23,6 +23,12 @@ export interface Ant {
   settled?: boolean; // queen only
 }
 
+export interface Enemy {
+  p: Vec2;
+  a: number;
+  alive: boolean;
+}
+
 export interface WorldConfig {
   width: number; height: number;
   cellSize: number;
