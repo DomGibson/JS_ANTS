@@ -18,7 +18,7 @@ npm run build && npm run preview
 npm run headless
 ```
 
-Open the browser dev server (Vite will open for you) and click anywhere on the canvas to add food. The HUD shows the current ant count and a hint.
+Open the browser dev server (Vite will open for you) and click anywhere on the canvas to add food. The HUD shows the current ant count, the size of the dug habitat, and a hint.
 
 ## Project structure
 

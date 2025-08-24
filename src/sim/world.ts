@@ -7,6 +7,7 @@ export class World {
   food: Float32Array;
   tiles: Uint8Array;
   colonyFood = 0;
+  habitatCells = 0; // number of dug-out cells forming the colony's habitat
 
   constructor(cfg: WorldConfig) {
     this.cfg = cfg;
@@ -59,11 +60,14 @@ export class World {
 
   dig(x:number,y:number){
     const t = this.tileAt(x,y);
-    if (t === Cell.DIRT || t === Cell.GRASS) this.setTile(x,y, Cell.AIR);
+    if (t === Cell.DIRT || t === Cell.GRASS) {
+      this.setTile(x,y, Cell.AIR);
+      if (y >= this.cfg.grassHeight) this.habitatCells++;
+    }
   }
 
   stepDirt(){
-    const { width, height } = this.cfg;
+    const { width, height, grassHeight } = this.cfg;
     for (let y=height-2; y>=0; y--){
       for (let x=0; x<width; x++){
         const i = this.idx(x,y);
@@ -71,6 +75,8 @@ export class World {
         if (this.tiles[i] === Cell.DIRT && this.tiles[below] === Cell.AIR){
           this.tiles[below] = Cell.DIRT;
           this.tiles[i] = Cell.AIR;
+          if (y+1 >= grassHeight) this.habitatCells--; // dirt fell into a tunnel
+          if (y   >= grassHeight) this.habitatCells++; // new air left behind
         }
       }
     }
