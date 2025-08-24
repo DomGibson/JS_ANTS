@@ -119,15 +119,15 @@ export class PixiRenderer {
     // ants
     this.antGfx.clear();
     const s = this.sim.cfg.cellSize;
-    // Workers (white), Soldier (cyan), Queen (yellow)
-    for (const a of this.sim.ants) {
-      if (!a.alive) continue;
-      let color = 0xffffff;
-      // simple role color coding based on enum order
-      // 0=queen,1=worker,2=soldier
-      // (we could import Role to switch; keeping lightweight)
-      // queen yellow, worker white, soldier cyan
+    // enemies in red
+    this.antGfx.beginFill(0xff0000, 0.95);
+    for (const e of this.sim.enemies) {
+      if (!e.alive) continue;
+      this.antGfx.drawRect(e.p.x*s, e.p.y*s, 1, 1);
     }
+    this.antGfx.endFill();
+
+    // ants
     this.antGfx.beginFill(0xffffff, 0.95);
     for (const a of this.sim.ants) {
       if (!a.alive) continue;
