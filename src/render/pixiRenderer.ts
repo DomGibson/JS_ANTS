@@ -1,6 +1,6 @@
 import { Application, Graphics, Sprite, Texture } from "pixi.js";
 import { Simulation } from "../sim/simulation";
-import { Cell } from "../sim/types";
+import { Cell, Role } from "../sim/types";
 
 export class PixiRenderer {
   app: Application;
@@ -116,23 +116,44 @@ export class PixiRenderer {
     this.ctx.putImageData(this.imageData, 0, 0);
     this.pherTex.update();
 
-    // ants
+    // ants & enemies (Pixi v8 API)
     this.antGfx.clear();
     const s = this.sim.cfg.cellSize;
-    // enemies in red
-    this.antGfx.beginFill(0xff0000, 0.95);
-    for (const e of this.sim.enemies) {
-      if (!e.alive) continue;
-      this.antGfx.drawRect(e.p.x*s, e.p.y*s, 1, 1);
-    }
-    this.antGfx.endFill();
 
-    // ants
-    this.antGfx.beginFill(0xffffff, 0.95);
-    for (const a of this.sim.ants) {
-      if (!a.alive) continue;
-      this.antGfx.drawRect(a.p.x*s, a.p.y*s, 1, 1);
+    // enemies (optional) — red
+    const simAny = this.sim as any;
+    if (simAny.enemies?.length) {
+      this.antGfx.beginPath();
+      for (const e of simAny.enemies) {
+        if (!e.alive) continue;
+        this.antGfx.rect(e.p.x * s, e.p.y * s, 1, 2);
+      }
+      this.antGfx.fill({ color: 0xff3b30, alpha: 0.95 });
     }
-    this.antGfx.endFill();
+
+    // workers — white
+    this.antGfx.beginPath();
+    for (const a of this.sim.ants) {
+      if (!a.alive || a.role !== Role.WORKER) continue;
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
+    }
+    this.antGfx.fill({ color: 0xffffff, alpha: 0.95 });
+
+    // soldiers — cyan
+    this.antGfx.beginPath();
+    for (const a of this.sim.ants) {
+      if (!a.alive || a.role !== Role.SOLDIER) continue;
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
+    }
+    this.antGfx.fill({ color: 0x00ffff, alpha: 0.95 });
+
+    // queen — yellow (slightly larger)
+    this.antGfx.beginPath();
+    for (const a of this.sim.ants) {
+      if (!a.alive || a.role !== Role.QUEEN) continue;
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 2, 2);
+    }
+    this.antGfx.fill({ color: 0xffee58, alpha: 1.0 });
+    
   }
 }
