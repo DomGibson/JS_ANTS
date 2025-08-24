@@ -12,6 +12,7 @@ const sim = new Simulation({
   turnRate: 0.25,
   moveSpeed: 0.6,
   nest: { x: 64, y: 1 },
+  rngSeed: "headless",
   grassHeight: 8,
   energyDrain: 0.001,
   digCost: 0.002,

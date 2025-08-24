@@ -1,38 +1,54 @@
 import { Ant, Role, WorldConfig, Enemy, Cell } from "./types";
 import { World } from "./world";
 
+const PICKUP_BURST = 10;
+const TRAIL_FALLOFF_STEPS = 120;
+const LOST_THRESHOLD = 0.0025;
+
+type WorkerState = { sincePickup: number };
+const workerState = new WeakMap<Ant, WorkerState>();
+
+function rand(world: World) {
+  const rng = (world as any).sim?.rng;
+  return rng ? rng.next() : Math.random();
+}
+
 export function makeQueen(spawn:{x:number;y:number}): Ant {
   return { p:{...spawn}, a:Math.PI/2, role:Role.QUEEN, carrying:false, energy:1, age:0, alive:true, settled:false };
 }
 
-export function makeWorker(spawn:{x:number;y:number}): Ant {
-  return { p:{...spawn}, a:Math.random()*Math.PI*2, role:Role.WORKER, carrying:false, energy:1, age:0, alive:true };
+export function makeWorker(spawn:{x:number;y:number}, angle:number = Math.random()*Math.PI*2): Ant {
+  return { p:{...spawn}, a:angle, role:Role.WORKER, carrying:false, energy:1, age:0, alive:true };
 }
 
-export function makeWorkers(n:number, spawn:{x:number;y:number}): Ant[] {
+export function makeWorkers(n:number, spawn:{x:number;y:number}, randAngle:()=>number = ()=>Math.random()*Math.PI*2): Ant[] {
   const ants: Ant[] = [];
-  for (let i=0; i<n; i++) ants.push(makeWorker(spawn));
+  for (let i=0; i<n; i++) ants.push(makeWorker(spawn, randAngle()));
   return ants;
 }
 
-export function makeSoldier(spawn:{x:number;y:number}): Ant {
-  return { p:{...spawn}, a:Math.random()*Math.PI*2, role:Role.SOLDIER, carrying:false, energy:1, age:0, alive:true };
+export function makeSoldier(spawn:{x:number;y:number}, angle:number = Math.random()*Math.PI*2): Ant {
+  return { p:{...spawn}, a:angle, role:Role.SOLDIER, carrying:false, energy:1, age:0, alive:true };
 }
 
 // Helpers
-function senseAt(a: Ant, world: World, cfg: WorldConfig, phi:number, field:"food"|"home"){
-  const dist = cfg.senseDist;
-  const dir = a.a + phi;
-  const sx = Math.round(a.p.x + Math.cos(dir)*dist);
-  const sy = Math.round(a.p.y + Math.sin(dir)*dist);
+function pher(a: Ant, world: World, field:"food"|"home", dir:number, cfg: WorldConfig){
+  const d = cfg.senseDist;
+  const sx = Math.round(a.p.x + Math.cos(a.a + dir)*d);
+  const sy = Math.round(a.p.y + Math.sin(a.a + dir)*d);
   if(!world.inBounds(sx,sy)) return 0;
-  const grid = field==="food" ? world.pher.food : world.pher.home;
-  return grid[world.idx(sx,sy)];
+  return (field==="food" ? world.pher.food : world.pher.home)[world.idx(sx,sy)];
 }
-function turnToward(a: Ant, left:number, ahead:number, right:number, maxTurn:number){
-  if (left>right && left>ahead) a.a -= maxTurn;
-  else if (right>left && right>ahead) a.a += maxTurn;
-  else a.a += (Math.random()-0.5)*maxTurn*0.2;
+
+function steerAnt(a:Ant, world:World, cfg:WorldConfig, following:"food"|"home"){
+  const L = pher(a, world, following, -cfg.senseAngle, cfg);
+  const M = pher(a, world, following, 0,               cfg);
+  const R = pher(a, world, following, +cfg.senseAngle, cfg);
+  let turn = 0;
+  if (L>R && L>M) turn = -cfg.turnRate;
+  else if (R>L && R>M) turn = +cfg.turnRate;
+  else if (Math.max(L,M,R) < LOST_THRESHOLD) turn = (world as any).sim?.rng?.range?.(-1,1) ?? (rand(world)*2-1);
+  a.a += turn * 0.85 + ((rand(world)*2-1)*0.15*cfg.turnRate);
 }
 function tryMoveOrDig(a:Ant, world:World, cfg:WorldConfig, nx:number, ny:number){
   const bx = Math.max(0, Math.min(world.cfg.width-1, nx));
@@ -47,20 +63,33 @@ function tryMoveOrDig(a:Ant, world:World, cfg:WorldConfig, nx:number, ny:number)
       a.energy -= cfg.digCost;
       a.p.x = bx; a.p.y = by;
     } else {
-      a.a += (Math.random()-0.5)*Math.PI;
+      a.a += (rand(world)-0.5)*Math.PI;
     }
   } else {
-    a.a += (Math.random()-0.5)*Math.PI;
+    a.a += (rand(world)-0.5)*Math.PI;
   }
 }
 
-// Behaviours
+function depositWithFalloff(a:Ant, world:World, carrying:boolean, cfg:WorldConfig){
+  const s = workerState.get(a) ?? { sincePickup: TRAIL_FALLOFF_STEPS };
+  if (!workerState.has(a)) workerState.set(a, s);
+
+  const cx = a.p.x|0, cy = a.p.y|0;
+  if (!carrying) {
+    world.pher.deposit(cx, cy, cfg.depositHome, "home");
+  } else {
+    const t = s.sincePickup;
+    const falloff = Math.max(0, 1 - t / TRAIL_FALLOFF_STEPS);
+    world.pher.deposit(cx, cy, cfg.depositFood * (0.25 + 0.75*falloff), "food");
+    s.sincePickup++;
+  }
+}
+
 function stepWorker(a:Ant, world:World, cfg:WorldConfig){
-  const targetField = a.carrying ? "home" : "food";
-  const l  = senseAt(a, world, cfg, -cfg.senseAngle, targetField);
-  const m  = senseAt(a, world, cfg, 0,               targetField);
-  const r  = senseAt(a, world, cfg, +cfg.senseAngle, targetField);
-  turnToward(a, l, m, r, cfg.turnRate);
+  const st = workerState.get(a) ?? { sincePickup: TRAIL_FALLOFF_STEPS };
+  if (!workerState.has(a)) workerState.set(a, st);
+
+  steerAnt(a, world, cfg, a.carrying ? "home" : "food");
 
   const nx = a.p.x + Math.cos(a.a)*cfg.moveSpeed;
   const ny = a.p.y + Math.sin(a.a)*cfg.moveSpeed;
@@ -71,22 +100,24 @@ function stepWorker(a:Ant, world:World, cfg:WorldConfig){
     const grabbed = world.takeFood(cx,cy, 0.5);
     if (grabbed > 0) {
       a.carrying = true;
-      world.pher.deposit(cx, cy, cfg.depositFood*10, "food"); // recruit burst
+      st.sincePickup = 0;
+      world.pher.deposit(cx, cy, cfg.depositFood * PICKUP_BURST, "food");
     }
   } else {
-    const dx = cx - (world.cfg.nest.x|0), dy = cy - (world.cfg.nest.y|0);
-    if (dx*dx + dy*dy <= 4) {
+    const homes = (world as any).sim?.homes ?? [world.cfg.nest];
+    const nearHome = homes.some(h => (h.x-cx)*(h.x-cx)+(h.y-cy)*(h.y-cy) <= 4);
+    if (nearHome) {
       a.carrying = false;
       world.colonyFood += 1;
       a.energy = Math.min(1, a.energy + 0.6);
     }
   }
-  world.pher.deposit(cx, cy, a.carrying ? cfg.depositFood : cfg.depositHome, a.carrying ? "food" : "home");
+  depositWithFalloff(a, world, a.carrying, cfg);
 }
 function stepQueen(a:Ant, world:World, cfg:WorldConfig){
   if (!a.settled) {
     const targetY = Math.min(world.cfg.height-4, world.cfg.grassHeight + 8);
-    a.a = Math.PI/2 + (Math.random()-0.5)*0.5;
+    a.a = Math.PI/2 + (rand(world)-0.5)*0.5;
     const nx = a.p.x + Math.cos(a.a)*cfg.moveSpeed*0.6;
     const ny = a.p.y + Math.abs(Math.sin(a.a))*cfg.moveSpeed;
     tryMoveOrDig(a, world, cfg, nx, ny);
@@ -95,7 +126,7 @@ function stepQueen(a:Ant, world:World, cfg:WorldConfig){
       world.cfg.nest = { x: a.p.x|0, y: a.p.y|0 };
     }
   } else {
-    a.a += (Math.random()-0.5)*0.3;
+    a.a += (rand(world)-0.5)*0.3;
     const nx = a.p.x + Math.cos(a.a)*cfg.moveSpeed*0.4;
     const ny = a.p.y + Math.sin(a.a)*cfg.moveSpeed*0.4;
     tryMoveOrDig(a, world, cfg, nx, ny);
@@ -140,7 +171,7 @@ function stepSoldier(a:Ant, world:World, cfg:WorldConfig, enemies:Enemy[]){
       while (delta < -Math.PI) delta += 2*Math.PI;
       a.a += Math.sign(delta) * cfg.turnRate * 0.8;
     } else {
-      a.a += (Math.random()-0.5) * cfg.turnRate;
+      a.a += (rand(world)-0.5) * cfg.turnRate;
     }
   }
 

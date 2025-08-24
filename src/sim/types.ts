@@ -42,6 +42,7 @@ export interface WorldConfig {
   turnRate: number;
   moveSpeed: number;
   rngSeed?: string;
+  homes?: Vec2[];
   nest: Vec2;                      // initial (surface), queen will move
   grassHeight: number;             // sky thickness before grass row
   energyDrain: number;             // per-step

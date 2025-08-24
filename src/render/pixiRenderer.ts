@@ -18,6 +18,8 @@ export class PixiRenderer {
   private terrainTex!: Texture;
   private terrainSprite!: Sprite;
 
+  private tileTex: { sky?: Texture; grass?: Texture; dirt?: Texture; tunnel?: Texture } = {};
+
   private widthPx: number;
   private heightPx: number;
   private _ready = false;
@@ -59,6 +61,13 @@ export class PixiRenderer {
     this.terrainSprite = new Sprite(this.terrainTex);
     this.terrainSprite.scale.set(this.sim.cfg.cellSize);
 
+    try {
+      this.tileTex.sky    = await Texture.fromURL("/tiles/sky.png");
+      this.tileTex.grass  = await Texture.fromURL("/tiles/grass.png");
+      this.tileTex.dirt   = await Texture.fromURL("/tiles/dirt.png");
+      this.tileTex.tunnel = await Texture.fromURL("/tiles/tunnel.png");
+    } catch {}
+
     this.app.stage.addChildAt(this.terrainSprite, 0);
     this.app.stage.addChildAt(this.pherSprite, 1);
 
@@ -71,9 +80,32 @@ export class PixiRenderer {
     const tiles = this.sim.world.tiles;
     const food = this.sim.world.food;
 
+    if (this.tileTex.dirt) {
+      const ctx = this.terrainCtx;
+      ctx.clearRect(0,0,w,h);
+      for (let y=0;y<h;y++){
+        for (let x=0;x<w;x++){
+          const idx = y*w + x;
+          if (food[idx] > 0) {
+            ctx.fillStyle = "#00ff00";
+            ctx.fillRect(x, y, 1, 1);
+            continue;
+          }
+          const t = tiles[idx];
+          let tex: Texture | undefined;
+          if (t === Cell.DIRT) tex = this.tileTex.dirt;
+          else if (t === Cell.GRASS) tex = this.tileTex.grass;
+          else tex = y < this.sim.world.cfg.grassHeight ? this.tileTex.sky : this.tileTex.tunnel;
+          const img = (tex as any)?.source?.resource;
+          if (img) ctx.drawImage(img, x, y, 1, 1);
+        }
+      }
+      this.terrainTex.update();
+      return;
+    }
+
     const img = this.terrainCtx.createImageData(w, h);
     const data = img.data;
-
     const soil = [145, 102, 19];
     const grass = [34, 139, 34];
     const air = [11, 13, 16];
