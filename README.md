@@ -50,3 +50,7 @@ Open `src/main.ts` and tweak the `Simulation` config: evaporation, diffusion, an
 - Renderer is PixiJS v8. We draw pheromone fields to an offscreen canvas and update a texture each frame (efficient + simple). Ants render batched as rect points.
 - The sim uses a fixed‑timestep loop inside the requestAnimationFrame tick for stability.
 - Everything in `/sim` is headless and can run in a Web Worker later for big ant counts.
+
+## Inspiration
+- C++ Rendition from Pezzza's Work
+https://www.youtube.com/@PezzzasWork
