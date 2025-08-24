@@ -28,7 +28,7 @@ for (let i=0;i<1500;i++) {
   if ((i%200)===0) {
     const totalFood = sim.world.pher.food.reduce((a,b)=>a+b,0);
     const totalHome = sim.world.pher.home.reduce((a,b)=>a+b,0);
-    console.log(`step=${i} ants=${sim.ants.length} colonyFood=${sim.world.colonyFood.toFixed(1)} pher(food=${totalFood.toFixed(1)}, home=${totalHome.toFixed(1)})`);
+    console.log(`step=${i} ants=${sim.ants.length} colonyFood=${sim.world.colonyFood.toFixed(1)} habitat=${sim.world.habitatCells} pher(food=${totalFood.toFixed(1)}, home=${totalHome.toFixed(1)})`);
   }
 }
 console.log("Done.");

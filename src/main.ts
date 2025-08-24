@@ -24,6 +24,7 @@ async function boot() {
   await renderer.init();
 
   const hudAntCount = document.getElementById("antCount");
+  const hudHabitat = document.getElementById("habitatSize");
   let last = performance.now(), acc = 0;
   const dt = 1000/60;
 
@@ -32,6 +33,7 @@ async function boot() {
     while (acc >= dt) { sim.step(); acc -= dt; }
     renderer.draw();
     if (hudAntCount) hudAntCount.textContent = String(sim.ants.filter(a=>a.alive).length);
+    if (hudHabitat) hudHabitat.textContent = String(sim.world.habitatCells);
     requestAnimationFrame(loop);
   }
   requestAnimationFrame(loop);
