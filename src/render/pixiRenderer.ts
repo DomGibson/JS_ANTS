@@ -69,6 +69,7 @@ export class PixiRenderer {
     const w = this.sim.world.cfg.width;
     const h = this.sim.world.cfg.height;
     const tiles = this.sim.world.tiles;
+    const food = this.sim.world.food;
 
     const img = this.terrainCtx.createImageData(w, h);
     const data = img.data;
@@ -81,7 +82,9 @@ export class PixiRenderer {
       const t = tiles[i];
       const idx = i*4;
       let c;
-      if (t === Cell.DIRT) c = soil;
+      if (food[i] > 0) {
+        c = [0, 255, 0];
+      } else if (t === Cell.DIRT) c = soil;
       else if (t === Cell.GRASS) c = grass;
       else c = air;
       data[idx] = c[0]; data[idx+1] = c[1]; data[idx+2] = c[2]; data[idx+3] = 255;
@@ -126,7 +129,7 @@ export class PixiRenderer {
       this.antGfx.beginPath();
       for (const e of simAny.enemies) {
         if (!e.alive) continue;
-        this.antGfx.rect(e.p.x * s, e.p.y * s, 1, 2);
+        this.antGfx.rect(e.p.x * s, e.p.y * s, 1, 1);
       }
       this.antGfx.fill({ color: 0xff3b30, alpha: 0.95 });
     }
@@ -135,7 +138,7 @@ export class PixiRenderer {
     this.antGfx.beginPath();
     for (const a of this.sim.ants) {
       if (!a.alive || a.role !== Role.WORKER) continue;
-      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 1);
     }
     this.antGfx.fill({ color: 0x0000ff, alpha: 0.95 });
 
@@ -143,7 +146,7 @@ export class PixiRenderer {
     this.antGfx.beginPath();
     for (const a of this.sim.ants) {
       if (!a.alive || a.role !== Role.SOLDIER) continue;
-      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 1);
     }
     this.antGfx.fill({ color: 0xff0000, alpha: 0.95 });
 
@@ -151,7 +154,7 @@ export class PixiRenderer {
     this.antGfx.beginPath();
     for (const a of this.sim.ants) {
       if (!a.alive || a.role !== Role.QUEEN) continue;
-      this.antGfx.rect(a.p.x * s, a.p.y * s, 2, 2);
+      this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 1);
     }
     this.antGfx.fill({ color: 0xffff00, alpha: 1.0 });
     

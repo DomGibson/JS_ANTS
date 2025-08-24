@@ -4,11 +4,17 @@ import { World } from "./world";
 export function makeQueen(spawn:{x:number;y:number}): Ant {
   return { p:{...spawn}, a:Math.PI/2, role:Role.QUEEN, carrying:false, energy:1, age:0, alive:true, settled:false };
 }
+
+export function makeWorker(spawn:{x:number;y:number}): Ant {
+  return { p:{...spawn}, a:Math.random()*Math.PI*2, role:Role.WORKER, carrying:false, energy:1, age:0, alive:true };
+}
+
 export function makeWorkers(n:number, spawn:{x:number;y:number}): Ant[] {
   const ants: Ant[] = [];
-  for (let i=0; i<n; i++) ants.push({ p:{...spawn}, a:Math.random()*Math.PI*2, role:Role.WORKER, carrying:false, energy:1, age:0, alive:true });
+  for (let i=0; i<n; i++) ants.push(makeWorker(spawn));
   return ants;
 }
+
 export function makeSoldier(spawn:{x:number;y:number}): Ant {
   return { p:{...spawn}, a:Math.random()*Math.PI*2, role:Role.SOLDIER, carrying:false, energy:1, age:0, alive:true };
 }
@@ -89,6 +95,10 @@ function stepQueen(a:Ant, world:World, cfg:WorldConfig){
       world.cfg.nest = { x: a.p.x|0, y: a.p.y|0 };
     }
   } else {
+    a.a += (Math.random()-0.5)*0.3;
+    const nx = a.p.x + Math.cos(a.a)*cfg.moveSpeed*0.4;
+    const ny = a.p.y + Math.sin(a.a)*cfg.moveSpeed*0.4;
+    tryMoveOrDig(a, world, cfg, nx, ny);
     const cx = a.p.x|0, cy = a.p.y|0;
     world.pher.deposit(cx, cy, cfg.depositHome*2, "home");
     if (world.colonyFood > 0 && a.energy < 0.9) {
@@ -143,6 +153,12 @@ export function stepAnt(a: Ant, world: World, cfg: WorldConfig, enemies: Enemy[]
   if (!a.alive) return;
   a.age++;
   a.energy -= cfg.energyDrain;
+
+  // drop ants from sky until they reach the surface
+  if (a.p.y < world.cfg.grassHeight-1) {
+    a.p.y += cfg.moveSpeed;
+    return;
+  }
 
   switch (a.role) {
     case Role.WORKER: stepWorker(a, world, cfg); break;

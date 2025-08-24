@@ -53,14 +53,14 @@ async function boot() {
   }
   requestAnimationFrame(loop);
 
-  // add food on canvas clicks
+  // spawn single food pixel on click
   const canvas = renderer.app.canvas as HTMLCanvasElement;
   canvas.addEventListener("pointerdown", (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = Math.floor((e.clientX - rect.left) / sim.cfg.cellSize);
     const y = Math.floor((e.clientY - rect.top) / sim.cfg.cellSize);
     if (x >= 0 && y >= 0 && x < sim.cfg.width && y < sim.cfg.height) {
-      sim.world.addFoodCircle(x, y, 6, 10);
+      sim.world.addFood(x, y, 10);
     }
   });
 }
