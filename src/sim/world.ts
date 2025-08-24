@@ -47,6 +47,10 @@ export class World {
       const dx=x-cx, dy=y-cy; if(dx*dx+dy*dy<=r*r) this.food[this.idx(x,y)] += amt;
     }
   }
+
+  addFood(x:number,y:number,amt:number){
+    if (this.inBounds(x,y)) this.food[this.idx(x,y)] += amt;
+  }
   takeFood(x:number,y:number, amt:number){
     const i = this.idx(x|0,y|0);
     const t = Math.min(this.food[i], amt);
@@ -56,5 +60,19 @@ export class World {
   dig(x:number,y:number){
     const t = this.tileAt(x,y);
     if (t === Cell.DIRT || t === Cell.GRASS) this.setTile(x,y, Cell.AIR);
+  }
+
+  stepDirt(){
+    const { width, height } = this.cfg;
+    for (let y=height-2; y>=0; y--){
+      for (let x=0; x<width; x++){
+        const i = this.idx(x,y);
+        const below = this.idx(x,y+1);
+        if (this.tiles[i] === Cell.DIRT && this.tiles[below] === Cell.AIR){
+          this.tiles[below] = Cell.DIRT;
+          this.tiles[i] = Cell.AIR;
+        }
+      }
+    }
   }
 }

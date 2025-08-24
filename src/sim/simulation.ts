@@ -1,5 +1,5 @@
 import { World } from "./world";
-import { makeQueen, makeSoldier, makeWorkers, stepAnt } from "./ant";
+import { makeQueen, makeSoldier, makeWorker, stepAnt } from "./ant";
 import { WorldConfig, Ant, Enemy } from "./types";
 import { spawnEnemy, stepEnemy } from "./enemy";
 
@@ -13,8 +13,11 @@ export class Simulation {
     this.cfg = cfg;
     this.world = new World(cfg);
 
-    const spawn = { x: cfg.nest.x, y: Math.max(0, cfg.grassHeight - 1) };
-    this.ants = [ makeQueen(spawn), ...makeWorkers(cfg.ants, spawn) ];
+    const queenSpawn = { x: cfg.nest.x, y: 0 };
+    this.ants = [ makeQueen(queenSpawn) ];
+    for (let i=0; i<cfg.ants; i++) {
+      this.ants.push(makeWorker({ x: Math.random()*cfg.width, y: 0 }));
+    }
     this.enemies = [];
   }
 
@@ -30,8 +33,10 @@ export class Simulation {
       this.world.colonyFood -= this.cfg.spawnThreshold;
       const spawn = { x: this.cfg.nest.x, y: this.cfg.nest.y };
       if (Math.random() < this.cfg.soldierRatio) this.ants.push(makeSoldier(spawn));
-      else this.ants.push(...makeWorkers(1, spawn));
+      else this.ants.push(makeWorker(spawn));
     }
+
+    this.world.stepDirt();
     this.world.pher.step(this.cfg.evap, this.cfg.diffuse);
   }
 }
