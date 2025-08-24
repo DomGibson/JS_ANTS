@@ -23,7 +23,10 @@ export class World {
   setTile(x:number,y:number,v:Cell){ this.tiles[this.idx(x|0,y|0)] = v; }
 
   isWalkable(x:number,y:number){
-    return this.tileAt(x,y) === Cell.AIR;
+    if (this.tileAt(x,y) !== Cell.AIR) return false;
+    // prevent ants from wandering into the sky; only allow the surface row
+    if (y < this.cfg.grassHeight - 1) return false;
+    return true;
   }
 
   generateTerrain(){

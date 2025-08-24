@@ -1,4 +1,4 @@
-import { Ant, Role, WorldConfig, Enemy } from "./types";
+import { Ant, Role, WorldConfig, Enemy, Cell } from "./types";
 import { World } from "./world";
 
 export function makeQueen(spawn:{x:number;y:number}): Ant {
@@ -31,10 +31,11 @@ function turnToward(a: Ant, left:number, ahead:number, right:number, maxTurn:num
 function tryMoveOrDig(a:Ant, world:World, cfg:WorldConfig, nx:number, ny:number){
   const bx = Math.max(0, Math.min(world.cfg.width-1, nx));
   const by = Math.max(0, Math.min(world.cfg.height-1, ny));
+  const tile = world.tileAt(bx|0, by|0);
   const walkable = world.isWalkable(bx|0, by|0);
   if (walkable) {
     a.p.x = bx; a.p.y = by;
-  } else {
+  } else if (tile === Cell.DIRT || tile === Cell.GRASS) {
     if (a.role !== Role.SOLDIER) {
       world.dig(bx|0, by|0);
       a.energy -= cfg.digCost;
@@ -42,6 +43,8 @@ function tryMoveOrDig(a:Ant, world:World, cfg:WorldConfig, nx:number, ny:number)
     } else {
       a.a += (Math.random()-0.5)*Math.PI;
     }
+  } else {
+    a.a += (Math.random()-0.5)*Math.PI;
   }
 }
 

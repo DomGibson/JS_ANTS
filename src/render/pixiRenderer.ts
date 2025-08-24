@@ -131,21 +131,21 @@ export class PixiRenderer {
       this.antGfx.fill({ color: 0xff3b30, alpha: 0.95 });
     }
 
-    // workers — white
+    // workers — blue
     this.antGfx.beginPath();
     for (const a of this.sim.ants) {
       if (!a.alive || a.role !== Role.WORKER) continue;
       this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
     }
-    this.antGfx.fill({ color: 0xffffff, alpha: 0.95 });
+    this.antGfx.fill({ color: 0x0000ff, alpha: 0.95 });
 
-    // soldiers — cyan
+    // soldiers — red
     this.antGfx.beginPath();
     for (const a of this.sim.ants) {
       if (!a.alive || a.role !== Role.SOLDIER) continue;
       this.antGfx.rect(a.p.x * s, a.p.y * s, 1, 2);
     }
-    this.antGfx.fill({ color: 0x00ffff, alpha: 0.95 });
+    this.antGfx.fill({ color: 0xff0000, alpha: 0.95 });
 
     // queen — yellow (slightly larger)
     this.antGfx.beginPath();
@@ -153,7 +153,7 @@ export class PixiRenderer {
       if (!a.alive || a.role !== Role.QUEEN) continue;
       this.antGfx.rect(a.p.x * s, a.p.y * s, 2, 2);
     }
-    this.antGfx.fill({ color: 0xffee58, alpha: 1.0 });
+    this.antGfx.fill({ color: 0xffff00, alpha: 1.0 });
     
   }
 }
